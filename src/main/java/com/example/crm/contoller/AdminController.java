@@ -111,11 +111,11 @@ public class AdminController {
         user.setPassword((String) payload.get("password"));
         user.setRole((String) payload.get("role"));
         user.setPosition((String) payload.get("position"));
-        
+
         if (payload.get("salary") != null && !payload.get("salary").toString().isEmpty()) {
             user.setSalary(Double.valueOf(payload.get("salary").toString()));
         }
-        
+
         if (payload.get("dateJoined") != null && !payload.get("dateJoined").toString().isEmpty()) {
             user.setDateOfJoining(java.time.LocalDate.parse(payload.get("dateJoined").toString()));
         }
