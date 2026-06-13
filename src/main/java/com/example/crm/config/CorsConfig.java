@@ -15,8 +15,8 @@ public class CorsConfig {
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/**")
                         .allowedOrigins(
-                            "https://whiteaurax.com",
-                            "https://www.whiteaurax.com",
+                            "https://touchandgo.in",
+                            "https://www.touchandgo.in",
                             "http://localhost:5173"
                         )
                         .allowedMethods("*")
