@@ -19,6 +19,7 @@ com/example/crm/config/DatabaseSeeder.class
 com/example/crm/contoller/LeaveController.class
 com/example/crm/repository/LeaveRepository.class
 com/example/crm/contoller/AttendanceController.class
+com/example/crm/config/CorsConfig.class
 com/example/crm/entity/LeaveRequest.class
 com/example/crm/repository/AttendanceRepository.class
 com/example/crm/entity/Lead.class
@@ -27,6 +28,7 @@ com/example/crm/service/ExcelImportService$1.class
 com/example/crm/contoller/AdminController.class
 com/example/crm/repository/TaskRepository.class
 com/example/crm/contoller/TaskController.class
+com/example/crm/config/CorsConfig$1.class
 com/example/crm/contoller/DashboardController.class
 com/example/crm/entity/AttendanceLog.class
 com/example/crm/entity/Payroll.class

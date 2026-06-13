@@ -1,4 +1,5 @@
 /Users/abhineshas/projects/CRM/backend/src/main/java/com/example/crm/CrmApplication.java
+/Users/abhineshas/projects/CRM/backend/src/main/java/com/example/crm/config/CorsConfig.java
 /Users/abhineshas/projects/CRM/backend/src/main/java/com/example/crm/config/DatabaseSeeder.java
 /Users/abhineshas/projects/CRM/backend/src/main/java/com/example/crm/contoller/AdminController.java
 /Users/abhineshas/projects/CRM/backend/src/main/java/com/example/crm/contoller/AttendanceController.java
