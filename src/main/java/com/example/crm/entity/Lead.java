@@ -20,6 +20,10 @@ public class Lead {
     private String email;
 
     private String source;
+
+    @Column(columnDefinition = "TEXT")
+    private String description;
+
     private String notes;
     private String status = "New";
     private LocalDateTime createdAt = LocalDateTime.now();
@@ -52,6 +56,9 @@ public class Lead {
 
     public String getSource() { return source; }
     public void setSource(String source) { this.source = source; }
+
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
 
     public String getNotes() { return notes; }
     public void setNotes(String notes) { this.notes = notes; }

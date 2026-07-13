@@ -4,7 +4,9 @@ import com.example.crm.entity.Lead;
 import com.example.crm.entity.LeaveRequest;
 import com.example.crm.entity.Task;
 import com.example.crm.entity.User;
+import com.example.crm.entity.Employee;
 import com.example.crm.repository.AttendanceRepository;
+import com.example.crm.repository.EmployeeRepository;
 import com.example.crm.repository.LeadRepository;
 import com.example.crm.repository.LeaveRepository;
 import com.example.crm.repository.TaskRepository;
@@ -39,6 +41,8 @@ public class AdminController {
     private TransactionRepository transactionRepository;
     @Autowired
     private TaskRepository taskRepository;
+    @Autowired
+    private EmployeeRepository employeeRepository;
 
     public UserRepository getUserRepository() {
         return userRepository;
@@ -98,8 +102,8 @@ public class AdminController {
 
     @PostMapping("/api/admin/add-user")
     public org.springframework.http.ResponseEntity<?> apiAddUser(@RequestBody Map<String, Object> payload) {
-        String email = (String) payload.get("email");
-        if (userRepository.existsByEmail(email)) {
+        String email = payload.get("email") == null ? "" : payload.get("email").toString().trim();
+        if (userRepository.existsByEmailIgnoreCase(email)) {
             Map<String, String> errors = new HashMap<>();
             errors.put("error", "Email already exists");
             return org.springframework.http.ResponseEntity.badRequest().body(errors);
@@ -109,7 +113,8 @@ public class AdminController {
         user.setName((String) payload.get("name"));
         user.setEmail(email);
         user.setPassword((String) payload.get("password"));
-        user.setRole((String) payload.get("role"));
+        String role = payload.get("role") == null ? "EXECUTIVE" : payload.get("role").toString().trim().toUpperCase();
+        user.setRole(role);
         user.setPosition((String) payload.get("position"));
 
         if (payload.get("salary") != null && !payload.get("salary").toString().isEmpty()) {
@@ -130,7 +135,62 @@ public class AdminController {
         }
 
         User savedUser = userRepository.save(user);
+        syncEmployeeForUser(savedUser, payload);
         return org.springframework.http.ResponseEntity.ok(savedUser);
+    }
+
+    private void syncEmployeeForUser(User user, Map<String, Object> payload) {
+        if (user == null || user.getEmail() == null || "ADMIN".equalsIgnoreCase(user.getRole())) {
+            return;
+        }
+
+        Employee employee = employeeRepository.findByEmailIgnoreCase(user.getEmail());
+        if (employee == null) {
+            employee = new Employee();
+            employee.setEmployeeId(nextEmployeeId());
+            employee.setEmail(user.getEmail());
+            employee.setStatus("Active");
+        }
+
+        employee.setName(user.getName());
+        employee.setPassword(user.getPassword());
+        employee.setRole(user.getRole());
+        employee.setSalary(user.getSalary());
+        employee.setJoiningDate(user.getDateOfJoining() != null ? user.getDateOfJoining() : LocalDate.now());
+        employee.setPhone(textValue(payload.get("phone"), "+966 50 000 0000"));
+        employee.setDepartment(textValue(payload.get("department"), defaultDepartment(user.getRole())));
+
+        employeeRepository.save(employee);
+    }
+
+    private String nextEmployeeId() {
+        long next = employeeRepository.count() + 101;
+        String employeeId = "EMP-" + next;
+        while (employeeRepository.existsByEmployeeId(employeeId)) {
+            next++;
+            employeeId = "EMP-" + next;
+        }
+        return employeeId;
+    }
+
+    private String defaultDepartment(String role) {
+        if ("HR".equalsIgnoreCase(role)) {
+            return "Human Resources";
+        }
+        if ("MANAGER".equalsIgnoreCase(role)) {
+            return "Sales Management";
+        }
+        if ("TRAINER".equalsIgnoreCase(role)) {
+            return "Training";
+        }
+        return "Sales Execution";
+    }
+
+    private String textValue(Object value, String fallback) {
+        if (value == null || value.toString().trim().isEmpty()) {
+            return fallback;
+        }
+        return value.toString().trim();
     }
 
     private boolean isNotLoggedIn(HttpSession session) {
@@ -143,9 +203,10 @@ public class AdminController {
      */
     @PostMapping("/admin/add-manager")
     public String addManager(@ModelAttribute User user) {
-        if (userRepository.existsByEmail(user.getEmail())) {
+        if (userRepository.existsByEmailIgnoreCase(user.getEmail().trim())) {
             return "redirect:/admin/manage-managers?error=email_exists";
         }
+        user.setEmail(user.getEmail().trim());
         user.setRole("MANAGER");
         userRepository.save(user);
         return "redirect:/admin/manage-managers?success=manager_added";
@@ -161,12 +222,13 @@ public class AdminController {
             @RequestParam(required = false) String origin) {
 
         // Check for duplicate email
-        if (userRepository.existsByEmail(user.getEmail())) {
+        if (userRepository.existsByEmailIgnoreCase(user.getEmail().trim())) {
             if ("manager".equals(origin))
                 return "redirect:/manager/executives?error=email_exists";
             return "redirect:/admin/manage-executives?error=email_exists";
         }
 
+        user.setEmail(user.getEmail().trim());
         user.setRole("EXECUTIVE");
         if (managerId != null) {
             userRepository.findById(managerId).ifPresent(user::setManager);

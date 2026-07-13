@@ -128,6 +128,16 @@ public class User {
         this.targetAmount = targetAmount;
     }
 
+    private String phone;
+
+    public String getPhone() {
+        return phone;
+    }
+
+    public void setPhone(String phone) {
+        this.phone = phone;
+    }
+
     // Helper for template to see team size
     @OneToMany(mappedBy = "manager")
     @com.fasterxml.jackson.annotation.JsonIgnore

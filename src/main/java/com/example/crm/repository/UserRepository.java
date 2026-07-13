@@ -11,7 +11,9 @@ import org.springframework.stereotype.Repository;
 public interface UserRepository extends JpaRepository<User, Long> {
     List<User> findByRole(String role);
     User findByEmail(String email);
+    User findByEmailIgnoreCase(String email);
     boolean existsByEmail(String email);
+    boolean existsByEmailIgnoreCase(String email);
     // NEW: Find all Executives assigned to a specific Manager
     List<User> findByManager(User manager);
 }

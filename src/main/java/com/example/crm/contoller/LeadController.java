@@ -3,10 +3,15 @@ package com.example.crm.contoller;
 import com.example.crm.entity.Lead;
 import com.example.crm.entity.Transaction;
 import com.example.crm.entity.User;
+import com.example.crm.entity.Student;
+import com.example.crm.entity.HrNotification;
 import com.example.crm.repository.LeadRepository;
 import com.example.crm.repository.TransactionRepository;
 import com.example.crm.repository.UserRepository;
+import com.example.crm.repository.StudentRepository;
+import com.example.crm.repository.HrNotificationRepository;
 import com.example.crm.service.ExcelImportService;
+import java.time.LocalDate;
 import jakarta.servlet.http.HttpSession;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -65,6 +70,12 @@ public class LeadController {
 	}
 	@Autowired
     private TransactionRepository transactionRepository;
+
+    @Autowired
+    private StudentRepository studentRepository;
+
+    @Autowired
+    private HrNotificationRepository hrNotificationRepository;
     
     @PostMapping("/leads/capture")
     public String captureLead(@ModelAttribute Lead lead, HttpSession session) {
@@ -303,6 +314,36 @@ public class LeadController {
         
         // Save to finance_transactions table
         transactionRepository.save(incomeTx);
+
+        // 3. AUTOMATION: Auto-provision Student
+        try {
+            Student student = new Student();
+            long studentCount = studentRepository.count();
+            student.setStudentId("STU-" + (1000 + studentCount + 1));
+            student.setName(lead.getCustomerName());
+            student.setPhone(lead.getPhoneNumber());
+            student.setEmail(lead.getEmail());
+            student.setCollege(lead.getCollege());
+            student.setQualification(lead.getDepartment() != null ? lead.getDepartment() : "Not Specified");
+            student.setCoursePurchased(lead.getSource() != null ? lead.getSource() : "Java Full Stack");
+            student.setCourseFees(amount);
+            student.setPaidAmount(amount);
+            student.setBalance(0.0);
+            student.setJoiningDate(LocalDate.now());
+            student.setSalesExecutive(currentUser != null ? currentUser.getName() : "System");
+            student.setStatus("PENDING_VERIFICATION");
+            studentRepository.save(student);
+
+            // 4. AUTOMATION: Create HR Notification
+            HrNotification notification = new HrNotification();
+            notification.setMessage("Sales Closed: Student " + student.getName() + " Purchased " + student.getCoursePurchased());
+            notification.setType("SALE_CLOSE");
+            notification.setCreatedAt(java.time.LocalDateTime.now());
+            notification.setIsRead(false);
+            hrNotificationRepository.save(notification);
+        } catch (Exception e) {
+            System.err.println("Failed to auto-provision student or create notification: " + e.getMessage());
+        }
         
      // --- UPDATED REDIRECT LOGIC START ---
         String role = currentUser.getRole();

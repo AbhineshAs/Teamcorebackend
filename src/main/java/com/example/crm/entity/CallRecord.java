@@ -56,6 +56,17 @@ public class CallRecord {
     public User getAgent() { return agent; }
     public void setAgent(User agent) { this.agent = agent; }
 
+    private LocalDateTime endTime;
+    
+    @Column(length = 1000)
+    private String followUpNotes;
+
+    public LocalDateTime getEndTime() { return endTime; }
+    public void setEndTime(LocalDateTime endTime) { this.endTime = endTime; }
+
+    public String getFollowUpNotes() { return followUpNotes; }
+    public void setFollowUpNotes(String followUpNotes) { this.followUpNotes = followUpNotes; }
+
     private String simUsed;
 
     public String getSimUsed() { return simUsed; }
