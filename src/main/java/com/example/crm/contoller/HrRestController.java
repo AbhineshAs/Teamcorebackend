@@ -342,6 +342,15 @@ public class HrRestController {
             student.setPaidAmount(details.getPaidAmount());
             student.setBalance(details.getCourseFees() - details.getPaidAmount());
             student.setStatus(details.getStatus());
+            if (details.getRating() != null) {
+                student.setRating(details.getRating());
+            }
+            if (details.getMockScore() != null) {
+                student.setMockScore(details.getMockScore());
+            }
+            if (details.getProjectGrade() != null) {
+                student.setProjectGrade(details.getProjectGrade());
+            }
             return ResponseEntity.ok(studentRepository.save(student));
         }).orElse(ResponseEntity.notFound().build());
     }

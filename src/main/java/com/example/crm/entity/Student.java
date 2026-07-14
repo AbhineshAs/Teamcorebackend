@@ -39,6 +39,10 @@ public class Student {
     // Status: PENDING_VERIFICATION, DOCUMENTS_PENDING, BATCH_NOT_ASSIGNED, BATCH_ASSIGNED, STARTED, COMPLETED, PLACED
     private String status = "PENDING_VERIFICATION";
 
+    private Double rating;
+    private String mockScore;
+    private String projectGrade;
+
     @ManyToOne
     @JoinColumn(name = "batch_id")
     private Batch batch;
