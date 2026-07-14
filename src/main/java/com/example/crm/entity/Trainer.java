@@ -20,4 +20,5 @@ public class Trainer {
     private String currentBatch;
     private Integer studentCount = 0;
     private Double performance = 0.0;
+    private String role; // TRAINER or TECH_LEAD
 }

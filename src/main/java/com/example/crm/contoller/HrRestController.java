@@ -174,6 +174,58 @@ public class HrRestController {
         user.setDateOfJoining(employee.getJoiningDate());
         user.setSalary(employee.getSalary());
         userRepository.save(user);
+
+        // Auto-sync Trainer record if role or department is Trainer/Tech Lead
+        boolean isTrainer = "TRAINER".equalsIgnoreCase(employee.getRole())
+                || "TECH_LEAD".equalsIgnoreCase(employee.getRole())
+                || "TECHNICAL_LEAD".equalsIgnoreCase(employee.getRole())
+                || (employee.getDepartment() != null && employee.getDepartment().toLowerCase().contains("trainer"))
+                || (employee.getDepartment() != null && employee.getDepartment().toLowerCase().contains("technical"))
+                || (employee.getDepartment() != null && employee.getDepartment().toLowerCase().contains("training"));
+
+        if (isTrainer) {
+            final String targetEmail = employee.getEmail().trim();
+            final String searchOld = oldEmail != null ? oldEmail.trim() : null;
+            Trainer trainer = trainerRepository.findAll().stream()
+                    .filter(t -> (t.getEmail() != null && t.getEmail().equalsIgnoreCase(targetEmail))
+                            || (employee.getPhone() != null && employee.getPhone().equals(t.getPhone())))
+                    .findFirst().orElse(null);
+
+            if (trainer == null && searchOld != null) {
+                trainer = trainerRepository.findAll().stream()
+                        .filter(t -> t.getEmail() != null && t.getEmail().equalsIgnoreCase(searchOld))
+                        .findFirst().orElse(null);
+            }
+
+            if (trainer == null) {
+                trainer = new Trainer();
+            }
+
+            trainer.setName(employee.getName());
+            trainer.setEmail(employee.getEmail().trim());
+            trainer.setPhone(employee.getPhone());
+            trainer.setExperience(employee.getExperience() != null ? employee.getExperience() : 2);
+            trainer.setCourses(employee.getSkills() != null && !employee.getSkills().isBlank() ? employee.getSkills()
+                    : "Java, Python");
+            trainer.setAvailableTime("09:00 AM - 06:00 PM");
+            trainer.setRole("TECH_LEAD".equalsIgnoreCase(employee.getRole())
+                    || "TECHNICAL_LEAD".equalsIgnoreCase(employee.getRole()) ? "TECH_LEAD" : "TRAINER");
+            if (trainer.getStudentCount() == null) {
+                trainer.setStudentCount(0);
+            }
+            if (trainer.getPerformance() == null) {
+                trainer.setPerformance(5.0);
+            }
+            trainerRepository.save(trainer);
+        } else {
+            final String targetEmail = employee.getEmail().trim();
+            Trainer trainer = trainerRepository.findAll().stream()
+                    .filter(t -> t.getEmail() != null && t.getEmail().equalsIgnoreCase(targetEmail))
+                    .findFirst().orElse(null);
+            if (trainer != null) {
+                trainerRepository.delete(trainer);
+            }
+        }
     }
 
     private String nextEmployeeId() {
@@ -194,7 +246,8 @@ public class HrRestController {
     }
 
     private String defaultDepartment(String role) {
-        if (role == null) return "Sales Execution";
+        if (role == null)
+            return "Sales Execution";
         String normalized = role.trim().toUpperCase();
         if ("HR".equals(normalized) || "HR_HEAD".equals(normalized)) {
             return "Human Resources";
@@ -351,7 +404,28 @@ public class HrRestController {
             if (details.getProjectGrade() != null) {
                 student.setProjectGrade(details.getProjectGrade());
             }
+
+            if (details.getBatch() != null && details.getBatch().getId() != null) {
+                batchRepository.findById(details.getBatch().getId()).ifPresent(student::setBatch);
+            } else {
+                student.setBatch(null);
+            }
+
+            if (details.getTrainer() != null && details.getTrainer().getId() != null) {
+                trainerRepository.findById(details.getTrainer().getId()).ifPresent(student::setTrainer);
+            } else {
+                student.setTrainer(null);
+            }
+
             return ResponseEntity.ok(studentRepository.save(student));
+        }).orElse(ResponseEntity.notFound().build());
+    }
+
+    @DeleteMapping("/students/{id}")
+    public ResponseEntity<?> deleteStudent(@PathVariable Long id) {
+        return studentRepository.findById(id).map(student -> {
+            studentRepository.delete(student);
+            return ResponseEntity.ok(Map.of("message", "Student deleted successfully"));
         }).orElse(ResponseEntity.notFound().build());
     }
 
@@ -510,11 +584,13 @@ public class HrRestController {
             batch.setCourse((String) payload.get("course"));
         if (payload.containsKey("startingDate")) {
             String startingDateStr = (String) payload.get("startingDate");
-            batch.setStartingDate(startingDateStr != null && !startingDateStr.isEmpty() ? LocalDate.parse(startingDateStr) : null);
+            batch.setStartingDate(
+                    startingDateStr != null && !startingDateStr.isEmpty() ? LocalDate.parse(startingDateStr) : null);
         }
         if (payload.containsKey("endingDate")) {
             String endingDateStr = (String) payload.get("endingDate");
-            batch.setEndingDate(endingDateStr != null && !endingDateStr.isEmpty() ? LocalDate.parse(endingDateStr) : null);
+            batch.setEndingDate(
+                    endingDateStr != null && !endingDateStr.isEmpty() ? LocalDate.parse(endingDateStr) : null);
         }
         if (payload.containsKey("duration"))
             batch.setDuration((String) payload.get("duration"));
@@ -567,6 +643,41 @@ public class HrRestController {
 
         Batch saved = batchRepository.save(batch);
         return ResponseEntity.ok(saved);
+    }
+
+    @GetMapping("/batches/{id}/students")
+    public ResponseEntity<List<Student>> getStudentsByBatch(@PathVariable Long id) {
+        // Verify batch exists
+        if (!batchRepository.findById(id).isPresent()) {
+            return ResponseEntity.notFound().build();
+        }
+        List<Student> students = studentRepository.findByBatchId(id);
+        return ResponseEntity.ok(students);
+    }
+
+    @DeleteMapping("/batches/{id}")
+    public ResponseEntity<?> deleteBatch(@PathVariable Long id) {
+        return batchRepository.findById(id).map(batch -> {
+            List<Student> students = studentRepository.findAll().stream()
+                    .filter(s -> s.getBatch() != null && s.getBatch().getId().equals(id))
+                    .toList();
+            for (Student s : students) {
+                s.setBatch(null);
+                s.setTrainer(null);
+                s.setStatus("BATCH_NOT_ASSIGNED");
+                studentRepository.save(s);
+            }
+
+            Trainer trainer = batch.getTrainer();
+            if (trainer != null) {
+                int currentCount = trainer.getStudentCount() != null ? trainer.getStudentCount() : 0;
+                trainer.setStudentCount(Math.max(0, currentCount - students.size()));
+                trainerRepository.save(trainer);
+            }
+
+            batchRepository.delete(batch);
+            return ResponseEntity.ok(Map.of("message", "Batch deleted successfully"));
+        }).orElse(ResponseEntity.notFound().build());
     }
 
     @GetMapping("/attendance/students")
@@ -678,8 +789,61 @@ public class HrRestController {
             trainer.setStudentCount(0);
         if (trainer.getPerformance() == null)
             trainer.setPerformance(5.0);
+        if (trainer.getRole() == null || trainer.getRole().isBlank())
+            trainer.setRole("TRAINER");
         Trainer saved = trainerRepository.save(trainer);
         return ResponseEntity.ok(saved);
+    }
+
+    @PutMapping("/trainers/{id}")
+    public ResponseEntity<?> updateTrainer(@PathVariable Long id, @RequestBody Map<String, Object> payload) {
+        return trainerRepository.findById(id).map(trainer -> {
+            if (payload.containsKey("name"))
+                trainer.setName((String) payload.get("name"));
+            if (payload.containsKey("email"))
+                trainer.setEmail((String) payload.get("email"));
+            if (payload.containsKey("phone"))
+                trainer.setPhone((String) payload.get("phone"));
+            if (payload.containsKey("experience"))
+                trainer.setExperience(Integer.parseInt(payload.get("experience").toString()));
+            if (payload.containsKey("courses"))
+                trainer.setCourses((String) payload.get("courses"));
+            if (payload.containsKey("availableTime"))
+                trainer.setAvailableTime((String) payload.get("availableTime"));
+            if (payload.containsKey("performance"))
+                trainer.setPerformance(Double.parseDouble(payload.get("performance").toString()));
+            Trainer saved = trainerRepository.save(trainer);
+            return ResponseEntity.ok(saved);
+        }).orElse(ResponseEntity.notFound().build());
+    }
+
+    @DeleteMapping("/trainers/{id}")
+    public ResponseEntity<?> deleteTrainer(@PathVariable Long id) {
+        return trainerRepository.findById(id).map(trainer -> {
+            // Unassign batches from this trainer
+            List<Batch> batches = batchRepository.findByTrainerId(id);
+            for (Batch b : batches) {
+                b.setTrainer(null);
+                batchRepository.save(b);
+            }
+            // Unassign students from this trainer
+            List<Student> students = studentRepository.findByTrainerId(id);
+            for (Student s : students) {
+                s.setTrainer(null);
+                studentRepository.save(s);
+            }
+            trainerRepository.delete(trainer);
+            return ResponseEntity.ok(Map.of("message", "Trainer deleted successfully"));
+        }).orElse(ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/trainers/{id}/batches")
+    public ResponseEntity<?> getBatchesByTrainer(@PathVariable Long id) {
+        if (!trainerRepository.findById(id).isPresent()) {
+            return ResponseEntity.notFound().build();
+        }
+        List<Batch> batches = batchRepository.findByTrainerId(id);
+        return ResponseEntity.ok(batches);
     }
 
     // ==========================================

@@ -84,6 +84,7 @@ public class Lead {
     private String college;
     private Integer passoutYear;
     private String department;
+    private String course;
 
     public String getCollege() { return college; }
     public void setCollege(String college) { this.college = college; }
@@ -93,6 +94,9 @@ public class Lead {
 
     public String getDepartment() { return department; }
     public void setDepartment(String department) { this.department = department; }
+
+    public String getCourse() { return course; }
+    public void setCourse(String course) { this.course = course; }
 
     public String getLastUpdatedBy() { return lastUpdatedBy; }
     public void setLastUpdatedBy(String lastUpdatedBy) { this.lastUpdatedBy = lastUpdatedBy; }

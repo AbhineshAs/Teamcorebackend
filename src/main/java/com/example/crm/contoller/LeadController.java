@@ -325,7 +325,7 @@ public class LeadController {
             student.setEmail(lead.getEmail());
             student.setCollege(lead.getCollege());
             student.setQualification(lead.getDepartment() != null ? lead.getDepartment() : "Not Specified");
-            student.setCoursePurchased(lead.getSource() != null ? lead.getSource() : "Java Full Stack");
+            student.setCoursePurchased(lead.getCourse() != null ? lead.getCourse() : "Java Full Stack");
             student.setCourseFees(amount);
             student.setPaidAmount(amount);
             student.setBalance(0.0);

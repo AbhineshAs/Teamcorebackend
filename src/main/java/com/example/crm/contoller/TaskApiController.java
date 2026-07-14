@@ -20,6 +20,11 @@ import com.example.crm.repository.EmployeeProfileRepository;
 import com.example.crm.repository.EmployeeRepository;
 import com.example.crm.repository.EmployeeAttendanceRepository;
 
+import com.example.crm.entity.Student;
+import com.example.crm.entity.HrNotification;
+import com.example.crm.repository.StudentRepository;
+import com.example.crm.repository.HrNotificationRepository;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.http.ResponseEntity;
@@ -65,6 +70,12 @@ public class TaskApiController {
 
     @Autowired
     private EmployeeAttendanceRepository employeeAttendanceRepository;
+
+    @Autowired
+    private StudentRepository studentRepository;
+
+    @Autowired
+    private HrNotificationRepository hrNotificationRepository;
 
     // --- STATUS CHECK ---
     @GetMapping("/status")
@@ -155,6 +166,7 @@ public class TaskApiController {
     public ResponseEntity<?> updateLead(@RequestBody Map<String, Object> payload) {
         Long id = Long.valueOf(payload.get("id").toString());
         Lead lead = leadRepository.findById(id).orElseThrow(() -> new RuntimeException("Lead not found"));
+        String oldStatus = lead.getStatus();
 
         if (payload.containsKey("customerName"))
             lead.setCustomerName(cleanString(payload.get("customerName")));
@@ -181,6 +193,8 @@ public class TaskApiController {
         }
         if (payload.containsKey("department"))
             lead.setDepartment(cleanString(payload.get("department")));
+        if (payload.containsKey("course"))
+            lead.setCourse(cleanString(payload.get("course")));
 
         if (payload.containsKey("value") && payload.get("value") != null) {
             lead.setValue(Double.valueOf(payload.get("value").toString()));
@@ -210,6 +224,41 @@ public class TaskApiController {
         }
 
         Lead saved = leadRepository.save(lead);
+
+        String newStatus = saved.getStatus();
+        boolean isClosedStatus = "Closed Won".equalsIgnoreCase(newStatus) || "Close".equalsIgnoreCase(newStatus) || "Closed".equalsIgnoreCase(newStatus);
+        boolean wasClosedStatus = "Closed Won".equalsIgnoreCase(oldStatus) || "Close".equalsIgnoreCase(oldStatus) || "Closed".equalsIgnoreCase(oldStatus);
+
+        if (isClosedStatus && !wasClosedStatus) {
+            try {
+                Student student = new Student();
+                long studentCount = studentRepository.count();
+                student.setStudentId("STU-" + (1000 + studentCount + 1));
+                student.setName(saved.getCustomerName());
+                student.setPhone(saved.getPhoneNumber());
+                student.setEmail(saved.getEmail());
+                student.setCollege(saved.getCollege());
+                student.setQualification(saved.getDepartment() != null ? saved.getDepartment() : "Not Specified");
+                student.setCoursePurchased(saved.getCourse() != null ? saved.getCourse() : "Java Full Stack");
+                student.setCourseFees(saved.getValue() != null ? saved.getValue() : 60000.0);
+                student.setPaidAmount(saved.getValue() != null ? saved.getValue() : 60000.0);
+                student.setBalance(0.0);
+                student.setJoiningDate(LocalDate.now());
+                student.setSalesExecutive(saved.getLastUpdatedBy() != null ? saved.getLastUpdatedBy() : "System");
+                student.setStatus("PENDING_VERIFICATION");
+                studentRepository.save(student);
+
+                HrNotification notification = new HrNotification();
+                notification.setMessage("Sales Closed: Student " + student.getName() + " Purchased " + student.getCoursePurchased());
+                notification.setType("SALE_CLOSE");
+                notification.setCreatedAt(LocalDateTime.now());
+                notification.setIsRead(false);
+                hrNotificationRepository.save(notification);
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+        }
+
         return ResponseEntity.ok(saved);
     }
 
