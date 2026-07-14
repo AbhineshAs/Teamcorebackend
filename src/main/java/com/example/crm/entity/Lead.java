@@ -16,7 +16,7 @@ public class Lead {
     @Column(unique = true, nullable = false)
     private String phoneNumber;
 
-    @Column(unique = true, nullable = false)
+    @Column(nullable = true)
     private String email;
 
     private String source;

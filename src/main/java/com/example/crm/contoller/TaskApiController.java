@@ -99,23 +99,29 @@ public class TaskApiController {
         }).collect(Collectors.toList());
     }
 
+    private String cleanString(Object val) {
+        if (val == null) return null;
+        String s = val.toString().trim();
+        return s.isEmpty() ? null : s;
+    }
+
     @PostMapping("/leads/add")
     public ResponseEntity<?> addLead(@RequestBody Map<String, Object> payload) {
         Lead lead = new Lead();
-        lead.setCustomerName((String) payload.get("customerName"));
-        lead.setEmail((String) payload.get("email"));
-        lead.setPhoneNumber((String) payload.get("phone"));
-        lead.setSource((String) payload.get("source"));
-        lead.setDescription((String) payload.get("description"));
-        lead.setStatus(payload.get("status") != null ? (String) payload.get("status") : "New");
-        lead.setNotes((String) payload.get("notes"));
-        lead.setCollege((String) payload.get("college"));
+        lead.setCustomerName(cleanString(payload.get("customerName")));
+        lead.setEmail(cleanString(payload.get("email")));
+        lead.setPhoneNumber(cleanString(payload.get("phone")));
+        lead.setSource(payload.get("source") != null ? cleanString(payload.get("source")) : "Website");
+        lead.setDescription(cleanString(payload.get("description")));
+        lead.setStatus(payload.get("status") != null ? cleanString(payload.get("status")) : "New");
+        lead.setNotes(cleanString(payload.get("notes")));
+        lead.setCollege(cleanString(payload.get("college")));
 
         if (payload.get("passoutYear") != null && !payload.get("passoutYear").toString().trim().isEmpty()) {
             lead.setPassoutYear(Integer.valueOf(payload.get("passoutYear").toString().trim()));
         }
 
-        lead.setDepartment((String) payload.get("department"));
+        lead.setDepartment(cleanString(payload.get("department")));
 
         if (payload.get("value") != null && !payload.get("value").toString().isEmpty()) {
             lead.setValue(Double.valueOf(payload.get("value").toString()));
@@ -135,10 +141,10 @@ public class TaskApiController {
         }
 
         if (payload.get("lastUpdatedBy") != null) {
-            lead.setLastUpdatedBy((String) payload.get("lastUpdatedBy"));
+            lead.setLastUpdatedBy(cleanString(payload.get("lastUpdatedBy")));
         }
         if (payload.get("lastUpdatedAt") != null) {
-            lead.setLastUpdatedAt((String) payload.get("lastUpdatedAt"));
+            lead.setLastUpdatedAt(cleanString(payload.get("lastUpdatedAt")));
         }
 
         Lead saved = leadRepository.save(lead);
@@ -151,21 +157,21 @@ public class TaskApiController {
         Lead lead = leadRepository.findById(id).orElseThrow(() -> new RuntimeException("Lead not found"));
 
         if (payload.containsKey("customerName"))
-            lead.setCustomerName((String) payload.get("customerName"));
+            lead.setCustomerName(cleanString(payload.get("customerName")));
         if (payload.containsKey("email"))
-            lead.setEmail((String) payload.get("email"));
+            lead.setEmail(cleanString(payload.get("email")));
         if (payload.containsKey("phone"))
-            lead.setPhoneNumber((String) payload.get("phone"));
+            lead.setPhoneNumber(cleanString(payload.get("phone")));
         if (payload.containsKey("source"))
-            lead.setSource((String) payload.get("source"));
+            lead.setSource(cleanString(payload.get("source")));
         if (payload.containsKey("description"))
-            lead.setDescription((String) payload.get("description"));
+            lead.setDescription(cleanString(payload.get("description")));
         if (payload.containsKey("status"))
-            lead.setStatus((String) payload.get("status"));
+            lead.setStatus(cleanString(payload.get("status")));
         if (payload.containsKey("notes"))
-            lead.setNotes((String) payload.get("notes"));
+            lead.setNotes(cleanString(payload.get("notes")));
         if (payload.containsKey("college"))
-            lead.setCollege((String) payload.get("college"));
+            lead.setCollege(cleanString(payload.get("college")));
         if (payload.containsKey("passoutYear")) {
             if (payload.get("passoutYear") != null && !payload.get("passoutYear").toString().trim().isEmpty()) {
                 lead.setPassoutYear(Integer.valueOf(payload.get("passoutYear").toString().trim()));
@@ -174,7 +180,7 @@ public class TaskApiController {
             }
         }
         if (payload.containsKey("department"))
-            lead.setDepartment((String) payload.get("department"));
+            lead.setDepartment(cleanString(payload.get("department")));
 
         if (payload.containsKey("value") && payload.get("value") != null) {
             lead.setValue(Double.valueOf(payload.get("value").toString()));

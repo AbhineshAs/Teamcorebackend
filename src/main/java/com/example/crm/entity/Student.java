@@ -23,7 +23,7 @@ public class Student {
 
     private String phone;
 
-    @Column(unique = true, nullable = false)
+    @Column(nullable = true)
     private String email;
 
     private String address;
