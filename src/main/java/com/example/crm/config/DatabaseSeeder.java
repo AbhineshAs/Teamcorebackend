@@ -40,6 +40,7 @@ public class DatabaseSeeder implements CommandLineRunner {
 
         ensureAdminUser(TEAMCORE_ADMIN_EMAIL, TEAMCORE_ADMIN_PASSWORD, "TeamCore Admin");
         ensureAdminUser(WHITEAURAX_ADMIN_EMAIL, WHITEAURAX_ADMIN_PASSWORD, "Site Admin");
+        ensureAdminUser("whitetrack@teamcore.com", "whitetrack@123", "WhiteTrack Admin");
     }
 
     private void ensureAdminUser(String email, String password, String name) {
