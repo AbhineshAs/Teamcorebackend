@@ -14,10 +14,11 @@ public class CorsConfig {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/**")
-                        .allowedOrigins(
+                        .allowedOriginPatterns(
                             "https://touchandgo.in",
                             "https://www.touchandgo.in",
-                            "http://localhost:5173"
+                            "http://localhost:5173",
+                            "https://*.up.railway.app"
                         )
                         .allowedMethods("*")
                         .allowedHeaders("*")

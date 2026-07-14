@@ -174,14 +174,16 @@ public class AdminController {
     }
 
     private String defaultDepartment(String role) {
-        if ("HR".equalsIgnoreCase(role)) {
+        if (role == null) return "Sales Execution";
+        String normalized = role.trim().toUpperCase();
+        if ("HR".equals(normalized) || "HR_HEAD".equals(normalized)) {
             return "Human Resources";
         }
-        if ("MANAGER".equalsIgnoreCase(role)) {
+        if ("MANAGER".equals(normalized)) {
             return "Sales Management";
         }
-        if ("TRAINER".equalsIgnoreCase(role)) {
-            return "Training";
+        if ("TRAINER".equals(normalized) || "TECH_LEAD".equals(normalized)) {
+            return "Training & Development";
         }
         return "Sales Execution";
     }

@@ -194,15 +194,16 @@ public class HrRestController {
     }
 
     private String defaultDepartment(String role) {
-        String normalized = normalizeRole(role);
-        if ("HR".equals(normalized)) {
+        if (role == null) return "Sales Execution";
+        String normalized = role.trim().toUpperCase();
+        if ("HR".equals(normalized) || "HR_HEAD".equals(normalized)) {
             return "Human Resources";
         }
         if ("MANAGER".equals(normalized)) {
             return "Sales Management";
         }
-        if ("TRAINER".equals(normalized)) {
-            return "Training";
+        if ("TRAINER".equals(normalized) || "TECH_LEAD".equals(normalized)) {
+            return "Training & Development";
         }
         return "Sales Execution";
     }
