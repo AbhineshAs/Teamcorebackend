@@ -55,6 +55,18 @@ public class ChatRestController {
         return ResponseEntity.ok(result);
     }
 
+    @GetMapping("/recent")
+    public ResponseEntity<List<ChatMessage>> getRecentMessages(@RequestParam Long userId) {
+        List<ChatMessage> all = chatMessageRepository.findAll();
+        List<ChatMessage> result = all.stream()
+                .filter(m -> m.getSpaceName() != null || 
+                        (m.getReceiver() != null && m.getReceiver().getId().equals(userId)) ||
+                        (m.getSender() != null && m.getSender().getId().equals(userId)))
+                .sorted(Comparator.comparing(ChatMessage::getTimestamp))
+                .toList();
+        return ResponseEntity.ok(result);
+    }
+
     @PostMapping("/send")
     public ResponseEntity<?> sendMessage(@RequestBody Map<String, Object> payload) {
         // Auto-cleanup messages older than 24 hours
