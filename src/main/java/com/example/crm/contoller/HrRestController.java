@@ -56,6 +56,9 @@ public class HrRestController {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private com.example.crm.service.EmailService emailService;
+
     // ==========================================
     // EMPLOYEE ENDPOINTS
     // ==========================================
@@ -92,6 +95,15 @@ public class HrRestController {
 
         Employee saved = employeeRepository.save(employee);
         syncUserForEmployee(saved);
+        if (saved.getEmail() != null && !saved.getEmail().trim().isEmpty()) {
+            String rawPassword = saved.getPassword() != null && !saved.getPassword().isBlank() ? saved.getPassword() : "Welcome@123";
+            emailService.sendUserCredentials(
+                saved.getEmail().trim(),
+                saved.getName(),
+                saved.getEmail().trim(),
+                rawPassword
+            );
+        }
         return ResponseEntity.ok(saved);
     }
 
@@ -175,10 +187,12 @@ public class HrRestController {
         user.setSalary(employee.getSalary());
         userRepository.save(user);
 
-        // Auto-sync Trainer record if role or department is Trainer/Tech Lead
+        // Auto-sync Trainer record if role or department is Trainer/Tech Lead/Manager
         boolean isTrainer = "TRAINER".equalsIgnoreCase(employee.getRole())
                 || "TECH_LEAD".equalsIgnoreCase(employee.getRole())
                 || "TECHNICAL_LEAD".equalsIgnoreCase(employee.getRole())
+                || "MANAGER".equalsIgnoreCase(employee.getRole())
+                || "ASSISTANT_MANAGER".equalsIgnoreCase(employee.getRole())
                 || (employee.getDepartment() != null && employee.getDepartment().toLowerCase().contains("trainer"))
                 || (employee.getDepartment() != null && employee.getDepartment().toLowerCase().contains("technical"))
                 || (employee.getDepartment() != null && employee.getDepartment().toLowerCase().contains("training"));
@@ -252,7 +266,7 @@ public class HrRestController {
         if ("HR".equals(normalized) || "HR_HEAD".equals(normalized)) {
             return "Human Resources";
         }
-        if ("MANAGER".equals(normalized)) {
+        if ("MANAGER".equals(normalized) || "BDE_MANAGER".equals(normalized) || "ASSISTANT_MANAGER".equals(normalized)) {
             return "Sales Management";
         }
         if ("TRAINER".equals(normalized) || "TECH_LEAD".equals(normalized)) {

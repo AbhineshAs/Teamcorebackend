@@ -95,6 +95,9 @@ public class AdminController {
     @Autowired
     private AttendanceRepository attendanceRepository;
 
+    @Autowired
+    private com.example.crm.service.EmailService emailService;
+
     @GetMapping("/api/admin/users")
     public List<User> apiGetUsers() {
         return userRepository.findAll();
@@ -136,6 +139,14 @@ public class AdminController {
 
         User savedUser = userRepository.save(user);
         syncEmployeeForUser(savedUser, payload);
+        if (savedUser.getEmail() != null && !savedUser.getEmail().trim().isEmpty()) {
+            emailService.sendUserCredentials(
+                savedUser.getEmail().trim(),
+                savedUser.getName(),
+                savedUser.getEmail().trim(),
+                savedUser.getPassword()
+            );
+        }
         return org.springframework.http.ResponseEntity.ok(savedUser);
     }
 
@@ -179,7 +190,7 @@ public class AdminController {
         if ("HR".equals(normalized) || "HR_HEAD".equals(normalized)) {
             return "Human Resources";
         }
-        if ("MANAGER".equals(normalized)) {
+        if ("MANAGER".equals(normalized) || "BDE_MANAGER".equals(normalized) || "ASSISTANT_MANAGER".equals(normalized)) {
             return "Sales Management";
         }
         if ("TRAINER".equals(normalized) || "TECH_LEAD".equals(normalized)) {
