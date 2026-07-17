@@ -388,7 +388,7 @@ public class TaskApiController {
                 task.setUser(u);
                 if ("EXECUTIVE".equals(u.getRole())) {
                     task.setExecutive(u);
-                } else if ("MANAGER".equals(u.getRole()) || "BDE_MANAGER".equals(u.getRole()) || "ASSISTANT_MANAGER".equals(u.getRole())) {
+                } else if ("MANAGER".equals(u.getRole()) || "BD_MANAGER".equals(u.getRole()) || "ASSISTANT_MANAGER".equals(u.getRole())) {
                     task.setManager(u);
                 }
             });
@@ -777,7 +777,7 @@ public class TaskApiController {
         if ("HR".equals(normalized) || "HR_HEAD".equals(normalized)) {
             return "Human Resources";
         }
-        if ("MANAGER".equals(normalized) || "BDE_MANAGER".equals(normalized) || "ASSISTANT_MANAGER".equals(normalized)) {
+        if ("MANAGER".equals(normalized) || "BD_MANAGER".equals(normalized) || "ASSISTANT_MANAGER".equals(normalized)) {
             return "Sales Management";
         }
         if ("TRAINER".equals(normalized) || "TECH_LEAD".equals(normalized)) {

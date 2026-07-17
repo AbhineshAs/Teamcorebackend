@@ -266,7 +266,7 @@ public class HrRestController {
         if ("HR".equals(normalized) || "HR_HEAD".equals(normalized)) {
             return "Human Resources";
         }
-        if ("MANAGER".equals(normalized) || "BDE_MANAGER".equals(normalized) || "ASSISTANT_MANAGER".equals(normalized)) {
+        if ("MANAGER".equals(normalized) || "BD_MANAGER".equals(normalized) || "ASSISTANT_MANAGER".equals(normalized)) {
             return "Sales Management";
         }
         if ("TRAINER".equals(normalized) || "TECH_LEAD".equals(normalized)) {
