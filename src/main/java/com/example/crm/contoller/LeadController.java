@@ -346,11 +346,9 @@ public class LeadController {
         }
         
      // --- UPDATED REDIRECT LOGIC START ---
-        String role = currentUser.getRole();
-        if ("MANAGER".equals(role)) {
+        if (currentUser != null && "MANAGER".equals(currentUser.getRole())) {
             return "redirect:/manager/my-leads?success=sale_closed";
         }
-       
 
         return "redirect:/executive/lead-capture?success=sale_closed"; 
     }

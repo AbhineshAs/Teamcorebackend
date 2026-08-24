@@ -58,6 +58,13 @@ public class DatabaseSeeder implements CommandLineRunner {
 
         ensureAdminUser(TEAMCORE_ADMIN_EMAIL, TEAMCORE_ADMIN_PASSWORD, "TeamCore Admin");
         ensureAdminUser(WHITEAURAX_ADMIN_EMAIL, WHITEAURAX_ADMIN_PASSWORD, "Site Admin");
+        ensureUser("bdemanager@teamcore.com", "password", "BDE Manager", "BDE_MANAGER");
+        ensureUser("manager@teamcore.com", "password", "Sales Manager", "MANAGER");
+        ensureUser("executive@teamcore.com", "password", "Sales Executive", "EXECUTIVE");
+        ensureUser("hr@teamcore.com", "password", "HR Operations", "HR");
+        ensureUser("techlead@teamcore.com", "password", "Technical Lead", "TECH_LEAD");
+        ensureUser("trainer1@teamcore.com", "password", "Alex Johnson", "TRAINER");
+        ensureUser("trainer2@teamcore.com", "password", "Priya Sharma", "TRAINER");
 
         // Sync existing closed leads to students table
         try {
@@ -142,6 +149,25 @@ public class DatabaseSeeder implements CommandLineRunner {
             userRepository.save(admin);
         } catch (Exception e) {
             System.err.println("Could not seed admin user " + email + ": " + e.getMessage());
+        }
+    }
+
+    private void ensureUser(String email, String password, String name, String role) {
+        User user = userRepository.findByEmailIgnoreCase(email);
+        if (user == null) {
+            user = new User();
+            user.setEmail(email);
+        }
+        user.setName(user.getName() == null || user.getName().isBlank() ? name : user.getName());
+        user.setPassword(password);
+        user.setRole(role);
+        user.setPosition(name);
+        user.setSalary(user.getSalary() == null ? 25000.0 : user.getSalary());
+        user.setDateOfJoining(user.getDateOfJoining() == null ? java.time.LocalDate.of(2024, 1, 1) : user.getDateOfJoining());
+        try {
+            userRepository.save(user);
+        } catch (Exception e) {
+            System.err.println("Could not seed user " + email + ": " + e.getMessage());
         }
     }
 }

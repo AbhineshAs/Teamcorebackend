@@ -84,30 +84,33 @@ public class TaskApiController {
     }
 
     // --- LEADS REST API ---
+    private Map<String, Object> mapLeadToDto(Lead l) {
+        Map<String, Object> map = new HashMap<>();
+        map.put("id", l.getId());
+        map.put("customerName", l.getCustomerName());
+        map.put("email", l.getEmail());
+        map.put("phone", l.getPhoneNumber());
+        map.put("source", l.getSource());
+        map.put("description", l.getDescription());
+        map.put("value", l.getValue() != null ? l.getValue() : 0.0);
+        map.put("notes", l.getNotes());
+        map.put("status", l.getStatus());
+        map.put("dateAdded", l.getCreatedAt() != null ? l.getCreatedAt().toLocalDate().toString() : "");
+        map.put("userId", l.getUser() != null ? l.getUser().getId() : null);
+        map.put("college", l.getCollege() != null ? l.getCollege() : "");
+        map.put("passoutYear", l.getPassoutYear() != null ? l.getPassoutYear() : null);
+        map.put("department", l.getDepartment() != null ? l.getDepartment() : "");
+        map.put("course", l.getCourse() != null ? l.getCourse() : "");
+        map.put("followUpDate", l.getFollowUpDate() != null ? l.getFollowUpDate().toString() : null);
+        map.put("closedDate", l.getClosedDate() != null ? l.getClosedDate().toString() : null);
+        map.put("lastUpdatedBy", l.getLastUpdatedBy() != null ? l.getLastUpdatedBy() : "");
+        map.put("lastUpdatedAt", l.getLastUpdatedAt() != null ? l.getLastUpdatedAt() : "");
+        return map;
+    }
+
     @GetMapping("/leads")
     public List<Map<String, Object>> getAllLeads() {
-        return leadRepository.findAll().stream().map(l -> {
-            Map<String, Object> map = new HashMap<>();
-            map.put("id", l.getId());
-            map.put("customerName", l.getCustomerName());
-            map.put("email", l.getEmail());
-            map.put("phone", l.getPhoneNumber());
-            map.put("source", l.getSource());
-            map.put("description", l.getDescription());
-            map.put("value", l.getValue() != null ? l.getValue() : 0.0);
-            map.put("notes", l.getNotes());
-            map.put("status", l.getStatus());
-            map.put("dateAdded", l.getCreatedAt() != null ? l.getCreatedAt().toLocalDate().toString() : "");
-            map.put("userId", l.getUser() != null ? l.getUser().getId() : null);
-            map.put("college", l.getCollege() != null ? l.getCollege() : "");
-            map.put("passoutYear", l.getPassoutYear() != null ? l.getPassoutYear() : null);
-            map.put("department", l.getDepartment() != null ? l.getDepartment() : "");
-            map.put("followUpDate", l.getFollowUpDate() != null ? l.getFollowUpDate().toString() : null);
-            map.put("closedDate", l.getClosedDate() != null ? l.getClosedDate().toString() : null);
-            map.put("lastUpdatedBy", l.getLastUpdatedBy() != null ? l.getLastUpdatedBy() : "");
-            map.put("lastUpdatedAt", l.getLastUpdatedAt() != null ? l.getLastUpdatedAt() : "");
-            return map;
-        }).collect(Collectors.toList());
+        return leadRepository.findAll().stream().map(this::mapLeadToDto).collect(Collectors.toList());
     }
 
     private String cleanString(Object val) {
@@ -118,48 +121,181 @@ public class TaskApiController {
 
     @PostMapping("/leads/add")
     public ResponseEntity<?> addLead(@RequestBody Map<String, Object> payload) {
-        Lead lead = new Lead();
-        lead.setCustomerName(cleanString(payload.get("customerName")));
-        lead.setEmail(cleanString(payload.get("email")));
-        lead.setPhoneNumber(cleanString(payload.get("phone")));
-        lead.setSource(payload.get("source") != null ? cleanString(payload.get("source")) : "Website");
-        lead.setDescription(cleanString(payload.get("description")));
-        lead.setStatus(payload.get("status") != null ? cleanString(payload.get("status")) : "New");
-        lead.setNotes(cleanString(payload.get("notes")));
-        lead.setCollege(cleanString(payload.get("college")));
+        try {
+            String phone = cleanString(payload.get("phone"));
+            if (phone == null || phone.isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Phone number is required"));
+            }
 
-        if (payload.get("passoutYear") != null && !payload.get("passoutYear").toString().trim().isEmpty()) {
-            lead.setPassoutYear(Integer.valueOf(payload.get("passoutYear").toString().trim()));
+            Optional<Lead> existingOpt = leadRepository.findByPhoneNumber(phone);
+            Lead lead = existingOpt.orElseGet(Lead::new);
+
+            String custName = cleanString(payload.get("customerName"));
+            if (custName != null) lead.setCustomerName(custName);
+
+            if (payload.containsKey("email")) {
+                lead.setEmail(cleanString(payload.get("email")));
+            }
+            lead.setPhoneNumber(phone);
+            if (payload.containsKey("source")) {
+                lead.setSource(payload.get("source") != null ? cleanString(payload.get("source")) : "Website");
+            } else if (lead.getSource() == null) {
+                lead.setSource("Website");
+            }
+            if (payload.containsKey("description")) {
+                lead.setDescription(cleanString(payload.get("description")));
+            }
+            if (payload.containsKey("status") && payload.get("status") != null) {
+                lead.setStatus(cleanString(payload.get("status")));
+            } else if (lead.getStatus() == null) {
+                lead.setStatus("New");
+            }
+            if (payload.containsKey("notes")) {
+                lead.setNotes(cleanString(payload.get("notes")));
+            }
+            if (payload.containsKey("college")) {
+                lead.setCollege(cleanString(payload.get("college")));
+            }
+
+            if (payload.get("passoutYear") != null && !payload.get("passoutYear").toString().trim().isEmpty()) {
+                lead.setPassoutYear(Integer.valueOf(payload.get("passoutYear").toString().trim()));
+            }
+
+            if (payload.containsKey("department")) {
+                lead.setDepartment(cleanString(payload.get("department")));
+            }
+
+            if (payload.containsKey("course")) {
+                lead.setCourse(cleanString(payload.get("course")));
+            }
+
+            if (payload.get("value") != null && !payload.get("value").toString().isEmpty()) {
+                lead.setValue(Double.valueOf(payload.get("value").toString()));
+            }
+
+            if (payload.get("userId") != null) {
+                Long userId = Long.valueOf(payload.get("userId").toString());
+                userRepository.findById(userId).ifPresent(lead::setUser);
+            }
+
+            if (payload.get("followUpDate") != null && !payload.get("followUpDate").toString().trim().isEmpty()) {
+                try {
+                    lead.setFollowUpDate(LocalDate.parse(payload.get("followUpDate").toString().trim()));
+                } catch (Exception ignored) {}
+            }
+
+            if (payload.get("closedDate") != null && !payload.get("closedDate").toString().trim().isEmpty()) {
+                try {
+                    lead.setClosedDate(LocalDate.parse(payload.get("closedDate").toString().trim()));
+                } catch (Exception ignored) {}
+            }
+
+            if (payload.get("lastUpdatedBy") != null) {
+                lead.setLastUpdatedBy(cleanString(payload.get("lastUpdatedBy")));
+            }
+            if (payload.get("lastUpdatedAt") != null) {
+                lead.setLastUpdatedAt(cleanString(payload.get("lastUpdatedAt")));
+            }
+
+            Lead saved = leadRepository.save(lead);
+            return ResponseEntity.ok(mapLeadToDto(saved));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage() != null ? e.getMessage() : "Failed to save lead"));
+        }
+    }
+
+    @PostMapping("/leads/bulk")
+    public ResponseEntity<?> addLeadsBulk(@RequestBody List<Map<String, Object>> payloads) {
+        List<Map<String, Object>> savedResults = new java.util.ArrayList<>();
+        int skippedCount = 0;
+        Map<Long, User> userCache = new HashMap<>();
+
+        for (Map<String, Object> payload : payloads) {
+            try {
+                String phone = cleanString(payload.get("phone"));
+                if (phone == null || phone.isEmpty()) {
+                    skippedCount++;
+                    continue;
+                }
+
+                Optional<Lead> existingOpt = leadRepository.findByPhoneNumber(phone);
+                Lead lead = existingOpt.orElseGet(Lead::new);
+
+                String custName = cleanString(payload.get("customerName"));
+                if (custName != null) lead.setCustomerName(custName);
+
+                if (payload.containsKey("email")) {
+                    lead.setEmail(cleanString(payload.get("email")));
+                }
+                lead.setPhoneNumber(phone);
+                lead.setSource(payload.get("source") != null ? cleanString(payload.get("source")) : "Bulk Import");
+                
+                if (payload.containsKey("description")) {
+                    lead.setDescription(cleanString(payload.get("description")));
+                }
+                if (payload.containsKey("status") && payload.get("status") != null) {
+                    lead.setStatus(cleanString(payload.get("status")));
+                } else if (lead.getStatus() == null) {
+                    lead.setStatus("New");
+                }
+                if (payload.containsKey("notes")) {
+                    lead.setNotes(cleanString(payload.get("notes")));
+                }
+                if (payload.containsKey("college")) {
+                    lead.setCollege(cleanString(payload.get("college")));
+                }
+                if (payload.get("passoutYear") != null && !payload.get("passoutYear").toString().trim().isEmpty()) {
+                    lead.setPassoutYear(Integer.valueOf(payload.get("passoutYear").toString().trim()));
+                }
+                if (payload.containsKey("department")) {
+                    lead.setDepartment(cleanString(payload.get("department")));
+                }
+                if (payload.containsKey("course")) {
+                    lead.setCourse(cleanString(payload.get("course")));
+                }
+                if (payload.get("value") != null && !payload.get("value").toString().isEmpty()) {
+                    lead.setValue(Double.valueOf(payload.get("value").toString()));
+                }
+                if (payload.get("userId") != null) {
+                    try {
+                        Long uid = Long.valueOf(payload.get("userId").toString());
+                        User u = userCache.computeIfAbsent(uid, id -> userRepository.findById(id).orElse(null));
+                        if (u != null) {
+                            lead.setUser(u);
+                        }
+                    } catch (Exception ignored) {}
+                }
+                if (payload.get("followUpDate") != null && !payload.get("followUpDate").toString().trim().isEmpty()) {
+                    try {
+                        lead.setFollowUpDate(LocalDate.parse(payload.get("followUpDate").toString().trim()));
+                    } catch (Exception ignored) {}
+                }
+                if (payload.get("closedDate") != null && !payload.get("closedDate").toString().trim().isEmpty()) {
+                    try {
+                        lead.setClosedDate(LocalDate.parse(payload.get("closedDate").toString().trim()));
+                    } catch (Exception ignored) {}
+                }
+                if (payload.get("lastUpdatedBy") != null) {
+                    lead.setLastUpdatedBy(cleanString(payload.get("lastUpdatedBy")));
+                }
+                if (payload.get("lastUpdatedAt") != null) {
+                    lead.setLastUpdatedAt(cleanString(payload.get("lastUpdatedAt")));
+                }
+
+                Lead saved = leadRepository.save(lead);
+                savedResults.add(mapLeadToDto(saved));
+            } catch (Exception e) {
+                System.err.println("Error saving bulk lead: " + e.getMessage());
+                skippedCount++;
+            }
         }
 
-        lead.setDepartment(cleanString(payload.get("department")));
-
-        if (payload.get("value") != null && !payload.get("value").toString().isEmpty()) {
-            lead.setValue(Double.valueOf(payload.get("value").toString()));
-        }
-
-        if (payload.get("userId") != null) {
-            Long userId = Long.valueOf(payload.get("userId").toString());
-            userRepository.findById(userId).ifPresent(lead::setUser);
-        }
-
-        if (payload.get("followUpDate") != null && !payload.get("followUpDate").toString().trim().isEmpty()) {
-            lead.setFollowUpDate(LocalDate.parse(payload.get("followUpDate").toString().trim()));
-        }
-
-        if (payload.get("closedDate") != null && !payload.get("closedDate").toString().trim().isEmpty()) {
-            lead.setClosedDate(LocalDate.parse(payload.get("closedDate").toString().trim()));
-        }
-
-        if (payload.get("lastUpdatedBy") != null) {
-            lead.setLastUpdatedBy(cleanString(payload.get("lastUpdatedBy")));
-        }
-        if (payload.get("lastUpdatedAt") != null) {
-            lead.setLastUpdatedAt(cleanString(payload.get("lastUpdatedAt")));
-        }
-
-        Lead saved = leadRepository.save(lead);
-        return ResponseEntity.ok(saved);
+        Map<String, Object> response = new HashMap<>();
+        response.put("saved", savedResults);
+        response.put("savedCount", savedResults.size());
+        response.put("skippedCount", skippedCount);
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/leads/update")
